@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Ban, CheckCircle2, DollarSign, Wallet, Wrench, BarChart3 } from "lucide-react";
+import { Ban, CheckCircle2, DollarSign, Wallet, Wrench, BarChart3, Receipt } from "lucide-react";
 
 // Types
 interface RepairItem {
@@ -39,10 +39,11 @@ const AppraisalResult: React.FC<AppraisalResultProps> = ({ result }) => {
   const [buyPrice, setBuyPrice] = useState(result.recommendedBuyPrice);
   const [sellPrice, setSellPrice] = useState(result.recommendedSellPrice);
   const [repairCost, setRepairCost] = useState(result.repairCost);
+  const [otherCost, setOtherCost] = useState(0); // New state for other costs
   
   // Calculate profit in real-time as the user edits values
   const calculateProfit = (): number => {
-    return sellPrice - buyPrice - repairCost;
+    return sellPrice - buyPrice - repairCost - otherCost; // Updated to include other costs
   };
   
   const handleBuyPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -60,9 +61,14 @@ const AppraisalResult: React.FC<AppraisalResultProps> = ({ result }) => {
     setRepairCost(isNaN(value) ? 0 : value);
   };
   
+  const handleOtherCostChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value.replace(/[^0-9]/g, ''));
+    setOtherCost(isNaN(value) ? 0 : value);
+  };
+  
   // Calculate profit
   const profit = calculateProfit();
-  const profitPercentage = (profit / buyPrice) * 100;
+  const profitPercentage = buyPrice > 0 ? (profit / buyPrice) * 100 : 0;
   
   // Determine profit status
   const isProfitGood = profit > 10000000; // 10 million IDR threshold
@@ -130,7 +136,7 @@ const AppraisalResult: React.FC<AppraisalResultProps> = ({ result }) => {
           <div className="space-y-2">
             <Label htmlFor="buy-price" className="flex items-center gap-1">
               <Wallet className="h-4 w-4" />
-              Recommended Buy Price
+              Buy Price
             </Label>
             <Input
               id="buy-price"
@@ -143,7 +149,7 @@ const AppraisalResult: React.FC<AppraisalResultProps> = ({ result }) => {
           <div className="space-y-2">
             <Label htmlFor="sell-price" className="flex items-center gap-1">
               <DollarSign className="h-4 w-4" />
-              Recommended Sell Price
+              Sell Price
             </Label>
             <Input
               id="sell-price"
@@ -153,20 +159,31 @@ const AppraisalResult: React.FC<AppraisalResultProps> = ({ result }) => {
             />
           </div>
           
-          {result.needsRepairs && (
-            <div className="space-y-2">
-              <Label htmlFor="repair-cost" className="flex items-center gap-1">
-                <Wrench className="h-4 w-4" />
-                Repair Cost
-              </Label>
-              <Input
-                id="repair-cost"
-                value={formatCurrency(repairCost)}
-                onChange={handleRepairCostChange}
-                className="input-focus text-right font-medium"
-              />
-            </div>
-          )}
+          <div className="space-y-2">
+            <Label htmlFor="repair-cost" className="flex items-center gap-1">
+              <Wrench className="h-4 w-4" />
+              Repair Cost
+            </Label>
+            <Input
+              id="repair-cost"
+              value={formatCurrency(repairCost)}
+              onChange={handleRepairCostChange}
+              className="input-focus text-right font-medium"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="other-cost" className="flex items-center gap-1">
+              <Receipt className="h-4 w-4" />
+              Other Cost
+            </Label>
+            <Input
+              id="other-cost"
+              value={formatCurrency(otherCost)}
+              onChange={handleOtherCostChange}
+              className="input-focus text-right font-medium"
+            />
+          </div>
         </div>
         
         <Separator />
