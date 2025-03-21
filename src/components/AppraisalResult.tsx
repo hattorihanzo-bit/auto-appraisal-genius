@@ -107,12 +107,12 @@ const AppraisalResult: React.FC<AppraisalResultProps> = ({ result }) => {
                 <Wrench className="h-3.5 w-3.5" />
                 Repairs Needed
               </p>
-              <p className="font-medium text-lg">{formatCurrency(repairCost)}</p>
+              <p className="font-medium text-lg">{formatCurrency(result.repairCost)}</p>
             </div>
           )}
         </div>
         
-        {result.needsRepairs && (
+        {result.needsRepairs && result.repairItems.length > 0 && (
           <div className="bg-muted/50 rounded-md p-3 text-sm space-y-2">
             <p className="font-medium">Repair Items:</p>
             {result.repairItems.map((item, index) => (
