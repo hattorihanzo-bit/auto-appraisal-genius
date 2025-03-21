@@ -107,7 +107,7 @@ const AppraisalResult: React.FC<AppraisalResultProps> = ({ result }) => {
                 <Wrench className="h-3.5 w-3.5" />
                 Repairs Needed
               </p>
-              <p className="font-medium text-lg">{formatCurrency(result.repairCost)}</p>
+              <p className="font-medium text-lg">{formatCurrency(repairCost)}</p>
             </div>
           )}
         </div>
