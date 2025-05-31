@@ -6,7 +6,7 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  base: mode === 'production' ? '/auto-appraisal-genius/' : '/',
+  base: "/auto-appraisal-genius/",
   server: {
     host: "::",
     port: 8080,
