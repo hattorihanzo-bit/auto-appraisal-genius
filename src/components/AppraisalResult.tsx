@@ -1,148 +1,221 @@
 
 import React, { useState } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Ban, CheckCircle2, DollarSign, Wallet, Wrench, BarChart3, Receipt } from "lucide-react";
 
-interface VehicleData {
-  make: string;
-  model: string;
-  year: string;
-  mileage: string;
-  condition: string;
+// Types
+interface RepairItem {
+  name: string;
+  cost: number;
 }
 
 interface AppraisalResultProps {
-  vehicleData: VehicleData;
-  onReset: () => void;
+  result: {
+    isPurchaseWorthy: boolean;
+    needsRepairs: boolean;
+    repairItems: RepairItem[];
+    repairCost: number;
+    marketPrice: number;
+    recommendedBuyPrice: number;
+    recommendedSellPrice: number;
+    potentialProfit: number;
+  };
 }
 
-const AppraisalResult = ({ vehicleData, onReset }: AppraisalResultProps) => {
-  const [repairCost, setRepairCost] = useState<number>(0);
-  const [otherCost, setOtherCost] = useState<number>(0);
+// Format currency helper
+const formatCurrency = (amount: number): string => {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
 
-  // Simple appraisal calculation based on year, mileage, and condition
-  const calculateBaseValue = () => {
-    const currentYear = new Date().getFullYear();
-    const age = currentYear - parseInt(vehicleData.year);
-    const mileage = parseInt(vehicleData.mileage);
-    
-    // Base value starts at $25,000 and decreases with age and mileage
-    let baseValue = 25000;
-    baseValue -= age * 1000; // $1000 per year
-    baseValue -= (mileage / 1000) * 50; // $50 per 1000 miles
-    
-    // Condition multiplier
-    const conditionMultipliers = {
-      excellent: 1.2,
-      good: 1.0,
-      fair: 0.8,
-      poor: 0.6
-    };
-    
-    baseValue *= conditionMultipliers[vehicleData.condition as keyof typeof conditionMultipliers] || 1.0;
-    
-    return Math.max(baseValue, 1000); // Minimum value of $1000
+const AppraisalResult: React.FC<AppraisalResultProps> = ({ result }) => {
+  const [buyPrice, setBuyPrice] = useState(result.recommendedBuyPrice);
+  const [sellPrice, setSellPrice] = useState(result.recommendedSellPrice);
+  const [repairCost, setRepairCost] = useState(result.repairCost);
+  const [otherCost, setOtherCost] = useState(0); // New state for other costs
+  
+  // Calculate profit in real-time as the user edits values
+  const calculateProfit = (): number => {
+    return sellPrice - buyPrice - repairCost - otherCost; // Updated to include other costs
   };
-
-  const baseValue = calculateBaseValue();
-  const buyPrice = Math.round(baseValue * 0.8); // 80% of base value
-  const sellPrice = Math.round(baseValue * 1.1); // 110% of base value
-  const potentialProfit = sellPrice - buyPrice - repairCost - otherCost;
-
+  
+  const handleBuyPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value.replace(/[^0-9]/g, ''));
+    setBuyPrice(isNaN(value) ? 0 : value);
+  };
+  
+  const handleSellPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value.replace(/[^0-9]/g, ''));
+    setSellPrice(isNaN(value) ? 0 : value);
+  };
+  
+  const handleRepairCostChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value.replace(/[^0-9]/g, ''));
+    setRepairCost(isNaN(value) ? 0 : value);
+  };
+  
+  const handleOtherCostChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value.replace(/[^0-9]/g, ''));
+    setOtherCost(isNaN(value) ? 0 : value);
+  };
+  
+  // Calculate profit
+  const profit = calculateProfit();
+  const profitPercentage = buyPrice > 0 ? (profit / buyPrice) * 100 : 0;
+  
+  // Determine profit status
+  const isProfitGood = profit > 10000000; // 10 million IDR threshold
+  const isProfitModerate = profit > 0 && profit <= 10000000;
+  const isProfitNegative = profit <= 0;
+  
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center">
-            Appraisal Results
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Vehicle Information</h3>
-              <div className="space-y-2">
-                <p><strong>Make:</strong> {vehicleData.make}</p>
-                <p><strong>Model:</strong> {vehicleData.model}</p>
-                <p><strong>Year:</strong> {vehicleData.year}</p>
-                <p><strong>Mileage:</strong> {parseInt(vehicleData.mileage).toLocaleString()} miles</p>
-                <p><strong>Condition:</strong> {vehicleData.condition}</p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Cost Components</h3>
-              
-              <div className="space-y-2">
-                <Label htmlFor="buyPrice">Buy Price</Label>
-                <Input
-                  id="buyPrice"
-                  type="text"
-                  value={`$${buyPrice.toLocaleString()}`}
-                  readOnly
-                  className="bg-gray-50"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="repairCost">Repair Cost</Label>
-                <Input
-                  id="repairCost"
-                  type="number"
-                  value={repairCost}
-                  onChange={(e) => setRepairCost(Number(e.target.value) || 0)}
-                  placeholder="Enter repair cost"
-                  min="0"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="otherCost">Other Cost</Label>
-                <Input
-                  id="otherCost"
-                  type="number"
-                  value={otherCost}
-                  onChange={(e) => setOtherCost(Number(e.target.value) || 0)}
-                  placeholder="Enter other costs"
-                  min="0"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="sellPrice">Recommended Sell Price</Label>
-                <Input
-                  id="sellPrice"
-                  type="text"
-                  value={`$${sellPrice.toLocaleString()}`}
-                  readOnly
-                  className="bg-gray-50"
-                />
-              </div>
-            </div>
+    <Card className="glassmorphism p-6 card-hover result-card">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold flex items-center gap-2">
+          <BarChart3 className="h-5 w-5" />
+          Appraisal Result
+        </h2>
+        
+        <div className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1
+          ${result.isPurchaseWorthy ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'}
+        `}>
+          {result.isPurchaseWorthy ? (
+            <>
+              <CheckCircle2 className="h-4 w-4" />
+              <span>Recommended</span>
+            </>
+          ) : (
+            <>
+              <Ban className="h-4 w-4" />
+              <span>Not Recommended</span>
+            </>
+          )}
+        </div>
+      </div>
+      
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-sm text-muted-foreground">Market Price</p>
+            <p className="font-medium text-lg">{formatCurrency(result.marketPrice)}</p>
           </div>
-
-          <div className="border-t pt-6">
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <h3 className="text-lg font-semibold mb-2">Potential Profit</h3>
-              <p className="text-2xl font-bold text-blue-600">
-                ${potentialProfit.toLocaleString()}
+          
+          {result.needsRepairs && (
+            <div>
+              <p className="text-sm text-muted-foreground flex items-center gap-1">
+                <Wrench className="h-3.5 w-3.5" />
+                Repairs Needed
               </p>
-              <p className="text-sm text-gray-600 mt-1">
-                Sell Price - Buy Price - Repair Cost - Other Cost
-              </p>
+              <p className="font-medium text-lg">{formatCurrency(repairCost)}</p>
             </div>
+          )}
+        </div>
+        
+        {result.needsRepairs && result.repairItems.length > 0 && (
+          <div className="bg-muted/50 rounded-md p-3 text-sm space-y-2">
+            <p className="font-medium">Repair Items:</p>
+            {result.repairItems.map((item, index) => (
+              <div key={index} className="flex justify-between">
+                <span>{item.name}</span>
+                <span>{formatCurrency(item.cost)}</span>
+              </div>
+            ))}
           </div>
-
-          <div className="flex justify-center">
-            <Button onClick={onReset} variant="outline">
-              New Appraisal
-            </Button>
+        )}
+        
+        <Separator />
+        
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="buy-price" className="flex items-center gap-1">
+              <Wallet className="h-4 w-4" />
+              Buy Price
+            </Label>
+            <Input
+              id="buy-price"
+              value={formatCurrency(buyPrice)}
+              onChange={handleBuyPriceChange}
+              className="input-focus text-right font-medium"
+            />
           </div>
-        </CardContent>
-      </Card>
-    </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="sell-price" className="flex items-center gap-1">
+              <DollarSign className="h-4 w-4" />
+              Sell Price
+            </Label>
+            <Input
+              id="sell-price"
+              value={formatCurrency(sellPrice)}
+              onChange={handleSellPriceChange}
+              className="input-focus text-right font-medium"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="repair-cost" className="flex items-center gap-1">
+              <Wrench className="h-4 w-4" />
+              Repair Cost
+            </Label>
+            <Input
+              id="repair-cost"
+              value={formatCurrency(repairCost)}
+              onChange={handleRepairCostChange}
+              className="input-focus text-right font-medium"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="other-cost" className="flex items-center gap-1">
+              <Receipt className="h-4 w-4" />
+              Other Cost
+            </Label>
+            <Input
+              id="other-cost"
+              value={formatCurrency(otherCost)}
+              onChange={handleOtherCostChange}
+              className="input-focus text-right font-medium"
+            />
+          </div>
+        </div>
+        
+        <Separator />
+        
+        <div className="rounded-md p-4 border border-border">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              Potential Profit
+            </h3>
+            <p className={`font-bold text-xl
+              ${isProfitGood ? 'text-green-600 dark:text-green-400' : ''}
+              ${isProfitModerate ? 'text-amber-600 dark:text-amber-400' : ''}
+              ${isProfitNegative ? 'text-red-600 dark:text-red-400' : ''}
+            `}>
+              {formatCurrency(profit)}
+            </p>
+          </div>
+          
+          <div className="mt-2 flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">Profit Margin</p>
+            <p className={`font-medium
+              ${isProfitGood ? 'text-green-600 dark:text-green-400' : ''}
+              ${isProfitModerate ? 'text-amber-600 dark:text-amber-400' : ''}
+              ${isProfitNegative ? 'text-red-600 dark:text-red-400' : ''}
+            `}>
+              {profitPercentage.toFixed(1)}%
+            </p>
+          </div>
+        </div>
+      </div>
+    </Card>
   );
 };
 
